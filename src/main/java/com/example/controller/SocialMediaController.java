@@ -1,35 +1,31 @@
 package com.example.controller;
 
-
 import com.example.entity.Account;
+import com.example.entity.Message;
 import com.example.exception.DuplicateUsernameException;
 import com.example.service.AccountService;
+import com.example.service.MessageService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * TODO: You will need to write your own endpoints and handlers for your controller using Spring. The endpoints you will need can be
- * found in readme.md as well as the test cases. You be required to use the @GET/POST/PUT/DELETE/etc Mapping annotations
- * where applicable as well as the @ResponseBody and @PathVariable annotations. You should
- * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
- */
+import java.util.List;
+
 @RestController
 public class SocialMediaController {
 
         private final AccountService accountService;
+        private final MessageService messageService;
 
-        public SocialMediaController(AccountService accountService) {
+        public SocialMediaController(AccountService accountService, MessageService messageService) {
                 this.accountService = accountService;
+                this.messageService = messageService;
         }
 
         @PostMapping("/register")
-        public ResponseEntity<Account> postAccount(@RequestBody Account account){
+        public ResponseEntity<Account> register(@RequestBody Account account){
                 try{
-                        Account savedAcc = accountService.registerAccount(account);
-                        return ResponseEntity.ok(savedAcc);
+                        Account savedAccount = accountService.registerAccount(account);
+                        return ResponseEntity.ok(savedAccount);
                 } catch (IllegalArgumentException e){
                         return ResponseEntity.status(400).build();
                 } catch (DuplicateUsernameException e) {
@@ -39,12 +35,59 @@ public class SocialMediaController {
         }
 
         @PostMapping("/login")
-        public ResponseEntity<Account> postLogin(@RequestBody Account account){
+        public ResponseEntity<Account> login(@RequestBody Account account){
                 try{
                         Account authenticatedAccount = accountService.login(account);
                         return ResponseEntity.ok(authenticatedAccount);
                 } catch (IllegalArgumentException e){
                         return ResponseEntity.status(401).build();
                 }
+        }
+
+        @PostMapping("/messages")
+        public ResponseEntity<Message> createMessage(@RequestBody Message message) {
+                try {
+                        return ResponseEntity.ok(messageService.createMessage(message));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.status(400).build();
+                }
+        }
+
+        @GetMapping("/messages")
+        public ResponseEntity<List<Message>> getAllMessages() {
+                return ResponseEntity.ok(messageService.getAllMessages());
+        }
+
+        @GetMapping("/messages/{messageId}")
+        public ResponseEntity<Message> getMessageById(@PathVariable Integer messageId) {
+                Message message = messageService.getMessageById(messageId);
+                if (message == null) {
+                        return ResponseEntity.ok().build();
+                }
+                return ResponseEntity.ok(message);
+        }
+
+        @DeleteMapping("/messages/{messageId}")
+        public ResponseEntity<Integer> deleteMessageById(@PathVariable Integer messageId) {
+                if (!messageService.deleteMessageById(messageId)) {
+                        return ResponseEntity.ok().build();
+                }
+                return ResponseEntity.ok(1);
+        }
+
+        @PatchMapping("/messages/{messageId}")
+        public ResponseEntity<Integer> updateMessageText(
+                @PathVariable Integer messageId,
+                @RequestBody Message message) {
+                try {
+                        return ResponseEntity.ok(messageService.updateMessageText(messageId, message));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.status(400).build();
+                }
+        }
+
+        @GetMapping("/accounts/{accountId}/messages")
+        public ResponseEntity<List<Message>> getMessagesByAccountId(@PathVariable Integer accountId) {
+                return ResponseEntity.ok(messageService.getMessagesByAccountId(accountId));
         }
 }
